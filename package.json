@@ -1,12 +1,13 @@
 {
   "name": "ai-demo-video-generator",
-  "version": "1.0.0",
-  "description": "AI-powered demo video generator — scroll-through recordings with AI voiceover",
+  "version": "2.0.0",
+  "description": "AI-powered website demo video generator — Playwright recordings + Remotion overlays + AI voiceover",
   "scripts": {
-    "setup": "npm install && npx playwright install chromium",
+    "setup": "npm install && npx playwright install chromium && cd remotion && npm install",
     "capture": "node capture.js",
-    "compose": "bash compose.sh",
-    "build": "node capture.js && bash compose.sh"
+    "render": "cd remotion && npx remotion render src/index.ts DemoVideo out/DemoVideo.mp4 --codec=h264 --crf=18",
+    "build": "node capture.js && cd remotion && npx remotion render src/index.ts DemoVideo out/DemoVideo.mp4 --codec=h264 --crf=18",
+    "studio": "cd remotion && npx remotion studio"
   },
   "dependencies": {
     "playwright": "^1.52.0"

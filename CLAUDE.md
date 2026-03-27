@@ -1,10 +1,19 @@
 # AI Demo Video Generator
 
-You are helping the user create a professional demo video of a website. The video will show a smooth scroll-through of the site with AI-generated voiceover narration. You can also simulate click interactions (cursor movement, click animation, page navigation).
+You are helping the user create a professional demo video of a website. The video shows a smooth scroll-through of the site with AI-generated voiceover narration, animated text overlays, zoom effects, sound effects, and branded intro/outro cards.
 
 ## Your Role
 
 Act as an interactive video production assistant. Guide the user through each step, ask questions, and configure everything for them. Be conversational and helpful.
+
+## Architecture
+
+The project has two layers:
+
+1. **Playwright** (`capture.js`) — Records a headless browser scrolling through the website with a visible animated cursor and click interactions. Outputs a `.webm` recording.
+2. **Remotion** (`remotion/`) — A React-based video framework that composites animated overlays on top of the recording: intro titles, callout badges, zoom effects, sound effects, spotlight effects, and outro cards. Renders the final `.mp4`.
+
+Both layers are driven by a single config file: `video.config.js`.
 
 ## Workflow
 
@@ -12,150 +21,227 @@ When the user starts a conversation, follow these steps in order:
 
 ### Step 1: Check Dependencies
 
-Check if dependencies are installed:
-
 ```bash
-# Check Node.js
 node --version
-
-# Check FFmpeg
 ffmpeg -version 2>&1 | head -1
-
-# Check if npm packages are installed
-ls node_modules/playwright 2>/dev/null && echo "Playwright installed" || echo "Playwright NOT installed"
+ls node_modules/playwright 2>/dev/null && echo "Playwright OK" || echo "Playwright missing"
+ls remotion/node_modules/remotion 2>/dev/null && echo "Remotion OK" || echo "Remotion missing"
 ```
 
-If anything is missing, install it:
-- Node packages: `npm run setup`
-- FFmpeg: `brew install ffmpeg` (macOS) or guide for their OS
+If anything is missing: `npm run setup`
+If FFmpeg is missing: `brew install ffmpeg` (macOS)
 
 ### Step 2: Gather Requirements
 
-Ask the user these questions (adapt based on what they've already told you):
+Ask the user:
 
 1. **What website URL do you want to record?**
-2. **What's the purpose of this video?** (marketing demo, help/tutorial, product walkthrough, etc.)
-3. **Do you want any click interactions?** (e.g., clicking nav links, buttons, showing a specific page)
-4. **How long should the video be?** (suggest 30-60s for marketing, 60-90s for tutorials)
+2. **What's the purpose?** (marketing demo, help/tutorial, product walkthrough)
+3. **Any click interactions?** (clicking nav links, buttons, showing specific pages)
+4. **How long should the video be?** (30-60s for marketing, 60-90s for tutorials)
+5. **Do they have any sound effects they want to use?** (woosh, click sounds, etc.)
 
-### Step 3: Fetch the Website
+### Step 3: Fetch and Analyze the Website
 
-Use WebFetch to analyze the target website. Understand:
-- The page structure and sections
-- Navigation items available for click interactions
-- Key content worth highlighting in the voiceover
-- The brand voice/tone
+Use WebFetch to analyze the target website. Extract:
+- Page structure, sections, and navigation items
+- Brand colors (inspect CSS or describe the visual palette)
+- Key content worth highlighting in callouts
+- The brand voice/tone for the voiceover script
 
 ### Step 4: Write the Voiceover Script
 
 Write a narration script that:
-- Matches the requested video duration (~130 words per minute for natural speech)
-- Follows the scroll/click flow of the video
-- Highlights key value propositions and calls to action
+- Matches the requested duration (~130 words per minute)
+- Follows the scroll/click flow
+- Highlights key value propositions
 - Matches the brand's tone
 
-Save the script to `voiceover-script.txt` and show it to the user for approval.
+Save to `voiceover-script.txt` and show to the user for approval.
 
 ### Step 5: Guide ElevenLabs Setup
 
-Ask: "Do you have an ElevenLabs account?" Then guide them:
+Ask: "Do you have an ElevenLabs account?"
 
-1. Go to **elevenlabs.io** → sign up or log in (free tier gives 10,000 characters/month)
+Then guide them:
+1. Go to **elevenlabs.io** — sign up or log in (free tier: 10,000 chars/month)
 2. Click **"Text to Speech"** in the left sidebar
 3. Paste the voiceover script
-4. **Choose a voice** — recommend based on the brand:
+4. **Choose a voice** — recommend based on brand:
    - Professional/corporate: "Rachel" (female) or "Adam" (male)
    - Friendly/startup: "Elli" (female) or "Josh" (male)
    - Authoritative: "Arnold" (male) or "Domi" (female)
 5. **Model**: Select "Eleven Multilingual v2"
 6. Click **Generate**, then **download as MP3**
-7. Rename to `voiceover.mp3` and move to this project directory
+7. Rename to `voiceover.mp3` and place in this project directory
 
-Once they confirm the file is placed, detect the audio duration:
-
+Detect the audio duration:
 ```bash
 ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 voiceover.mp3
 ```
 
 ### Step 6: Configure video.config.js
 
-Based on the requirements gathered, update `video.config.js` with:
-- The target URL
-- The voiceover script text
-- The phases array describing the video flow
+Update `video.config.js` with all settings. Here's a complete example showing all features:
 
-**Example phases for a marketing video with a click interaction:**
 ```js
-phases: [
-  { action: 'scroll', duration: 20, scrollPercent: 60 },
-  { action: 'click', selector: 'a', text: 'Our Story' },
-  { action: 'navigate', url: 'https://example.com/our-story/', waitMs: 4000 },
-  { action: 'scroll', duration: 20, scrollPercent: 100 },
-]
+module.exports = {
+  url: 'https://example.com',
+  viewport: { width: 1920, height: 1080 },
+  voiceoverFile: 'voiceover.mp3',
+  audioDuration: 43,
+  outputFile: 'demo_video_final.mp4',
+  fps: 30,
+
+  brand: {
+    primary: '#5e0d8b',   // Main brand color (callout backgrounds, accents)
+    accent: '#f4b334',    // Accent color (cursor glow, CTA buttons, dots)
+    dark: '#1a0530',      // Dark color (backgrounds, fade-from-black)
+    text: '#ffffff',      // Text color
+  },
+
+  phases: [
+    { action: 'scroll', duration: 20, scrollPercent: 60 },
+    { action: 'click', selector: 'a', text: 'About Us' },
+    { action: 'navigate', url: 'https://example.com/about', waitMs: 4000 },
+    { action: 'scroll', duration: 20, scrollPercent: 100 },
+  ],
+
+  overlays: [
+    // Intro title card
+    { type: 'intro', text: 'Company Name', subtitle: 'Tagline here',
+      fromFrame: 0, durationInFrames: 90 },
+
+    // Callout badges (slide in from edges)
+    { type: 'callout', text: 'Key stat or message',
+      position: 'bottom-left', fromFrame: 240, durationInFrames: 180 },
+
+    // Google Earth-style zoom to a click target
+    { type: 'zoom', targetX: 38, targetY: 2.5, scale: 3.5,
+      fromFrame: 590, holdFrames: 40, totalFrames: 160 },
+
+    // Woosh sound effect on the zoom
+    { type: 'sound', file: 'woosh.mp3', volume: 0.7,
+      fromFrame: 590, durationInFrames: 30 },
+
+    // Spotlight dim effect during click
+    { type: 'spotlight', fromFrame: 600, durationInFrames: 90 },
+
+    // Section title slide-in
+    { type: 'section-title', text: 'About Us',
+      fromFrame: 690, durationInFrames: 120 },
+
+    // Outro card with CTA
+    { type: 'outro', headline: 'Ready to Get Started?',
+      subheadline: 'Join thousands of customers.',
+      cta: 'Sign Up Free', website: 'example.com',
+      fromFrame: 1200, durationInFrames: 90 },
+  ],
+
+  voiceoverScript: 'The full voiceover script text goes here...',
+};
 ```
 
-**Example phases for a simple scroll-through:**
-```js
-phases: [
-  { action: 'scroll', duration: 45, scrollPercent: 100 },
-]
-```
+#### Overlay Timing Guide
 
-**Phase timing tips:**
-- Scroll durations are automatically distributed if not set, based on audio duration
-- Click animations take ~3 seconds
-- Navigate actions take waitMs (default 4000ms) for page load
-- Total phase time should roughly match the audio duration
+To calculate frame numbers from seconds: `frame = seconds * fps`
 
-### Step 7: Capture the Video
+At 30fps:
+- 1 second = 30 frames
+- 5 seconds = 150 frames
+- 10 seconds = 300 frames
+- 30 seconds = 900 frames
+- 43 seconds = 1290 frames
 
-Run the capture:
+#### Zoom Targeting Guide
+
+`targetX` and `targetY` are percentages of the viewport (0-100):
+- Top-left corner: `targetX: 0, targetY: 0`
+- Center: `targetX: 50, targetY: 50`
+- Nav bar (typical): `targetX: 30-50, targetY: 2-5`
+- Bottom-right CTA: `targetX: 80, targetY: 90`
+
+The zoom animates the `transformOrigin` to these coordinates while scaling up, creating a "fly into" effect.
+
+#### Sound Effects
+
+Place any `.mp3` sound effect files in `remotion/public/`. Reference them by filename in the `sound` overlay. Common effects:
+- Woosh for zoom transitions
+- Click sounds for button interactions
+- Subtle chime for callout appearances
+
+### Step 7: Capture the Recording
+
 ```bash
 npm run capture
 ```
 
-This launches a headless browser, records the scroll/click interactions, and saves a `.webm` file. Takes 1-3 minutes depending on video length.
+This launches a headless browser with Playwright's native video recorder, scrolls through the site with the animated cursor, and saves a `.webm` file. Assets are automatically copied to `remotion/public/`.
 
-### Step 8: Compose the Final Video
+### Step 8: Render with Remotion
 
-Run the composition:
 ```bash
-npm run compose
+npm run render
 ```
 
-This speed-adjusts the recording to match the audio duration, adds fade in/out, and overlays the voiceover. The final file is saved as the `outputFile` from config.
+This composites all overlays onto the recording and outputs `remotion/out/DemoVideo.mp4`.
+
+To preview in a browser with scrubbing (useful for fine-tuning timing):
+```bash
+npm run studio
+```
 
 ### Step 9: Review
 
-Open the video for the user:
 ```bash
-open demo_video_final.mp4  # macOS
+open remotion/out/DemoVideo.mp4
 ```
 
-Ask if they want adjustments:
-- **Scroll speed**: Adjust phase durations in config
-- **Different click targets**: Update the phases array
-- **Different voiceover**: Re-record and re-compose
-- **Smaller file size**: Re-compose with higher CRF value
+Common adjustments:
+- **Zoom position off**: Change `targetX`/`targetY` in the zoom overlay
+- **Callout timing wrong**: Adjust `fromFrame` values
+- **Scroll too fast/slow**: Change phase `duration` values
+- **Want more/fewer overlays**: Add or remove entries from the `overlays` array
+- **Re-render only** (no re-capture needed): `npm run render`
+- **Re-capture + render**: `npm run build`
 
 ## Important Notes
 
 - Always read `video.config.js` before making changes to understand current state
-- The `compose.sh` script auto-detects speed adjustment needed — no manual math required
-- If the capture fails with a timeout, increase the `waitMs` on navigate phases or the initial page load wait
-- Recordings are in `.webm` format in the `recordings/` directory
-- The compose step cleans up intermediate files automatically
+- The capture script auto-copies the recording + voiceover to `remotion/public/`
+- Remotion reads overlays from `video.config.js` at build time — all overlays are data-driven
+- The cursor has a pulsing glow ring that uses the `brand.accent` color
+- If capture fails with timeout, increase the initial page load wait or navigate `waitMs`
+- Sound effect files must be placed in `remotion/public/` and referenced by filename
+- `npm run studio` opens a browser preview with frame-by-frame scrubbing — great for timing
 
 ## File Structure
 
 ```
-├── CLAUDE.md              ← You are here (instructions for Claude Code)
-├── README.md              ← Human-readable documentation
-├── video.config.js        ← Video configuration (URL, phases, script)
-├── capture.js             ← Playwright recording script
-├── compose.sh             ← FFmpeg composition script
-├── package.json           ← Dependencies and npm scripts
-├── voiceover-script.txt   ← Generated voiceover text
-├── voiceover.mp3          ← ElevenLabs audio (user provides)
-└── demo_video_final.mp4   ← Final output
+├── CLAUDE.md                  ← Instructions for Claude Code (you are here)
+├── README.md                  ← Human-readable documentation
+├── video.config.js            ← All video settings (URL, phases, overlays, brand)
+├── capture.js                 ← Playwright recording script
+├── compose.sh                 ← Legacy FFmpeg-only composition (simple mode)
+├── package.json               ← Root dependencies + npm scripts
+├── voiceover-script.txt       ← Generated voiceover text
+├── voiceover.mp3              ← ElevenLabs audio (user provides)
+└── remotion/
+    ├── package.json           ← Remotion dependencies
+    ├── tsconfig.json
+    ├── remotion.config.ts
+    ├── public/
+    │   ├── recording.webm     ← Auto-copied from capture
+    │   ├── voiceover.mp3      ← Auto-copied from capture
+    │   └── woosh.mp3          ← Sound effects (user provides)
+    ├── src/
+    │   ├── index.ts           ← Entry point (registerRoot)
+    │   ├── Root.tsx            ← Composition registration
+    │   ├── DemoVideo.tsx       ← Main composition (reads config, renders overlays)
+    │   └── components/
+    │       ├── IntroTitle.tsx  ← Animated intro title card
+    │       ├── Callout.tsx     ← Slide-in callout badge
+    │       ├── SectionTitle.tsx← Slide-in section title
+    │       ├── OutroCard.tsx   ← Branded outro with CTA
+    │       └── Spotlight.tsx   ← Radial dim/spotlight effect
 ```

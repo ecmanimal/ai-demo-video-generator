@@ -33,7 +33,7 @@ const config = require('./video.config');
   // --- Distribute duration across scroll phases if not explicitly set ---
   const scrollPhases = config.phases.filter((p) => p.action === 'scroll');
   const nonScrollTime = config.phases.reduce((sum, p) => {
-    if (p.action === 'click') return sum + 3; // ~3s for click animations
+    if (p.action === 'click') return sum + 3;
     if (p.action === 'navigate') return sum + ((p.waitMs || 4000) / 1000);
     return sum;
   }, 0);
@@ -42,12 +42,12 @@ const config = require('./video.config');
   const totalExplicitScrollTime = scrollPhases.reduce((s, p) => s + (p.duration || 0), 0);
 
   if (totalExplicitScrollTime === 0 && scrollPhases.length > 0) {
-    // Auto-distribute evenly
     const perPhase = totalScrollDuration / scrollPhases.length;
     scrollPhases.forEach((p) => (p.duration = Math.floor(perPhase)));
   }
 
   const VIEWPORT = config.viewport || { width: 1920, height: 1080 };
+  const brandAccent = (config.brand && config.brand.accent) || '#f4b334';
   const RECORDINGS_DIR = path.join(__dirname, 'recordings');
 
   // Clean recordings dir
@@ -76,20 +76,31 @@ const config = require('./video.config');
         }
         @keyframes cursorRipple {
           0% { width: 0; height: 0; opacity: 1; }
-          100% { width: 50px; height: 50px; opacity: 0; }
+          100% { width: 70px; height: 70px; opacity: 0; }
+        }
+        @keyframes cursorGlow {
+          0%, 100% { opacity: 0.4; transform: translate(-8px,-8px) scale(1); }
+          50% { opacity: 0.8; transform: translate(-8px,-8px) scale(1.2); }
         }
       `,
     });
-    await page.evaluate(() => {
+    await page.evaluate((accent) => {
       const old = document.getElementById('ai-cursor');
       if (old) old.remove();
       const cursor = document.createElement('div');
       cursor.id = 'ai-cursor';
-      cursor.innerHTML = `<svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M3 2L13 25L16 15L26 12L3 2Z" fill="white" stroke="black" stroke-width="1.5" stroke-linejoin="round"/>
-      </svg>`;
+      cursor.innerHTML = `
+        <div style="position:relative;">
+          <div style="position:absolute;top:0;left:0;width:48px;height:48px;border-radius:50%;
+            background:${accent}4D;border:2px solid ${accent}99;
+            transform:translate(-8px,-8px);animation:cursorGlow 1.5s ease-in-out infinite;"></div>
+          <svg width="48" height="48" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 2L13 25L16 15L26 12L3 2Z" fill="white" stroke="black" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      `;
       document.body.appendChild(cursor);
-    });
+    }, brandAccent);
   }
 
   async function moveCursor(x, y) {
@@ -100,14 +111,14 @@ const config = require('./video.config');
   }
 
   async function showClickRipple(x, y) {
-    await page.evaluate(({ x, y }) => {
+    await page.evaluate(({ x, y, accent }) => {
       const r = document.createElement('div');
       r.style.cssText = `position:fixed;z-index:999998;pointer-events:none;left:${x}px;top:${y}px;
-        width:0;height:0;border-radius:50%;border:3px solid rgba(94,13,139,0.8);
+        width:0;height:0;border-radius:50%;border:4px solid ${accent}E6;
         transform:translate(-50%,-50%);animation:cursorRipple 0.6s ease-out forwards;`;
       document.body.appendChild(r);
       setTimeout(() => r.remove(), 700);
-    }, { x, y });
+    }, { x, y, accent: brandAccent });
   }
 
   async function smoothScroll(totalPixels, durationMs) {
@@ -184,5 +195,17 @@ const config = require('./video.config');
   const videoPath = await page.video().path();
   await context.close();
   await browser.close();
+
+  // Copy recording to Remotion public dir for rendering
+  const remotionPublic = path.join(__dirname, 'remotion', 'public');
+  if (fs.existsSync(remotionPublic)) {
+    fs.copyFileSync(videoPath, path.join(remotionPublic, 'recording.webm'));
+    // Also copy voiceover
+    if (fs.existsSync(config.voiceoverFile)) {
+      fs.copyFileSync(config.voiceoverFile, path.join(remotionPublic, 'voiceover.mp3'));
+    }
+    console.log('Assets copied to remotion/public/');
+  }
+
   console.log(`Recording saved: ${videoPath}`);
 })();
