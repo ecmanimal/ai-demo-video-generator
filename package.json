@@ -1,0 +1,14 @@
+{
+  "name": "ai-demo-video-generator",
+  "version": "1.0.0",
+  "description": "AI-powered demo video generator — scroll-through recordings with AI voiceover",
+  "scripts": {
+    "setup": "npm install && npx playwright install chromium",
+    "capture": "node capture.js",
+    "compose": "bash compose.sh",
+    "build": "node capture.js && bash compose.sh"
+  },
+  "dependencies": {
+    "playwright": "^1.52.0"
+  }
+}
