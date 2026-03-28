@@ -15,6 +15,19 @@ The project has two layers:
 
 Both layers are driven by a single config file: `video.config.js`.
 
+## CRITICAL RULE: Never Guess Zoom Coordinates
+
+**ALWAYS use `get-coordinates.js` to measure exact pixel positions before configuring zoom overlays.** Never estimate element positions from screenshots or page descriptions — visual estimation is wildly inaccurate (can be off by 40%+).
+
+```bash
+# Get exact coordinates of any element
+node get-coordinates.js "a" "About Us"
+node get-coordinates.js ".cta-button"
+node get-coordinates.js "#signup-form"
+```
+
+This outputs exact pixel + percentage coordinates AND pre-calculated zoom translate values for `video.config.js`. Use these numbers directly.
+
 ## Workflow
 
 When the user starts a conversation, follow these steps in order:
@@ -155,10 +168,13 @@ At 30fps:
 
 #### Zoom Targeting Guide
 
-`targetX` and `targetY` are percentages of the viewport (0-100):
-- Top-left corner: `targetX: 0, targetY: 0`
-- Center: `targetX: 50, targetY: 50`
-- Nav bar (typical): `targetX: 30-50, targetY: 2-5`
+**ALWAYS run `get-coordinates.js` to get exact positions. NEVER estimate.**
+
+```bash
+node get-coordinates.js "a" "About Us"
+```
+
+This outputs exact pixel coordinates and pre-calculated translate values. Use those numbers directly in the zoom overlay config. Do not eyeball coordinates from screenshots — they will be wrong.
 - Bottom-right CTA: `targetX: 80, targetY: 90`
 
 The zoom animates the `transformOrigin` to these coordinates while scaling up, creating a "fly into" effect.
