@@ -62,6 +62,10 @@ const config = require('./video.config');
   });
   const page = await context.newPage();
 
+  // Set dark background immediately so recording never shows white
+  const bgColor = (config.brand && config.brand.dark) || '#0a0a0a';
+  await page.evaluate((c) => document.documentElement.style.backgroundColor = c, bgColor);
+
   // --- Helper: inject overlays ---
   async function injectOverlays() {
     await page.addStyleTag({
@@ -126,7 +130,7 @@ const config = require('./video.config');
     const pxPerStep = totalPixels / steps;
     const msPerStep = durationMs / steps;
     for (let i = 0; i < steps; i++) {
-      await page.evaluate((px) => window.scrollBy(0, px), pxPerStep);
+      await page.evaluate((px) => window.scrollBy({ top: px, behavior: 'instant' }), pxPerStep);
       await page.waitForTimeout(msPerStep);
     }
   }

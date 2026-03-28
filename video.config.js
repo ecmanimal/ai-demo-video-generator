@@ -1,93 +1,74 @@
-/**
- * Video Configuration
- *
- * This file defines what the demo video will show.
- * Claude Code will help you fill this out — you generally don't need to edit it by hand.
- */
 module.exports = {
-  // Target website URL
-  url: '',
-
-  // Viewport size (default: 1920x1080 for full HD)
+  url: 'https://google.com',
   viewport: { width: 1920, height: 1080 },
-
-  // Path to your voiceover MP3 file (placed in this project directory)
-  voiceoverFile: 'voiceover.mp3',
-
-  // Total audio duration in seconds (auto-detected from MP3 if left at 0)
-  audioDuration: 0,
-
-  // Output filename
-  outputFile: 'demo_video_final.mp4',
-
-  // Frames per second for the Remotion composition
+  voiceoverFile: 'voiceover2.mp3',
+  audioDuration: 76,
+  outputFile: 'site_demo.mp4',
   fps: 30,
 
-  // Brand colors (used by Remotion overlays — Claude Code will set these from the website)
   brand: {
-    primary: '#5e0d8b',
-    accent: '#f4b334',
-    dark: '#1a0530',
-    text: '#ffffff',
+    primary: '#141414',
+    accent: '#fafafa',
+    dark: '#0a0a0a',
+    text: '#fafafa',
   },
 
-  // Video phases — an ordered list of actions the recording will perform.
-  // Claude Code will build this array for you based on your description.
-  //
-  // Phase types:
-  //   { action: 'scroll', duration: 20, scrollPercent: 60 }
-  //       Smoothly scroll a percentage of the current page over N seconds.
-  //
-  //   { action: 'click', selector: 'a', text: 'Our Story' }
-  //       Move a visible cursor to the element and click it. Automatically
-  //       scrolls to top first, shows a ripple animation, then navigates.
-  //
-  //   { action: 'navigate', url: 'https://...', waitMs: 4000 }
-  //       Navigate to a URL and wait for it to load.
-  //
-  //   { action: 'scroll', duration: 20, scrollPercent: 100 }
-  //       Scroll the rest of the new page.
-  //
-  phases: [],
+  // ── Recording phases (76s audio) ──────────────────────────────────
+  // ~8s load + 28s scroll + 3s click + 6s navigate + 30s quiz = ~75s
+  phases: [
+    { action: 'scroll', duration: 28, scrollPercent: 95 },
+    { action: 'click', selector: 'a', text: 'Take the test drive' },
+    { action: 'navigate', url: 'https://google.com/quiz', waitMs: 5000 },
+    { action: 'scroll', duration: 30, scrollPercent: 5 },
+  ],
 
-  // Remotion overlays — timed animations layered on top of the recording.
-  // Claude Code will build this array based on the website content and user preferences.
+  // ── Remotion overlays (76s × 30fps = 2280 frames) ────────────────
   //
-  // Overlay types:
+  // Scroll timeline (28s for 95%, starting ~8s):
+  //   Problem/stats:    ~12-17s  (frames 360-510)
+  //   Framework:        ~17-24s  (frames 510-720)
+  //   Testimonial:      ~24-30s  (frames 720-900)
+  //   Pricing:          ~30-36s  (frames 900-1080)
+  //   Click phase:      ~36-39s  (frames 1080-1170)
+  //   Quiz visible:     ~45s     (frame 1350)
   //
-  //   { type: 'intro', text: 'Main Title', subtitle: 'Subtitle text',
-  //     fromFrame: 0, durationInFrames: 90 }
-  //       Animated intro title card with spring animation and accent bar.
-  //
-  //   { type: 'callout', text: 'Key stat or message',
-  //     position: 'bottom-left', fromFrame: 240, durationInFrames: 180 }
-  //       Slide-in badge with brand-colored background.
-  //       Positions: 'bottom-left', 'bottom-right', 'top-left', 'top-right'
-  //
-  //   { type: 'section-title', text: 'Section Name',
-  //     fromFrame: 690, durationInFrames: 120 }
-  //       Slide-in section title with accent bar.
-  //
-  //   { type: 'zoom', targetX: 38, targetY: 2.5, scale: 3.5,
-  //     fromFrame: 590, holdFrames: 40, totalFrames: 160 }
-  //       Google Earth-style zoom to a specific point on the video.
-  //       targetX/targetY are percentages (0-100) of the viewport.
-  //       The zoom eases in, holds, then eases back out.
-  //
-  //   { type: 'spotlight', fromFrame: 600, durationInFrames: 90 }
-  //       Dims the screen with a radial spotlight cutout — great during click moments.
-  //
-  //   { type: 'sound', file: 'woosh.mp3', volume: 0.7,
-  //     fromFrame: 590, durationInFrames: 30 }
-  //       Play a sound effect at a specific time. Place audio files in remotion/public/.
-  //
-  //   { type: 'outro', headline: 'Transform Your Career.',
-  //     subheadline: 'Change Your Life.', cta: 'Book a Call Today',
-  //     website: 'example.com', fromFrame: 1200, durationInFrames: 90 }
-  //       Branded outro card with animated CTA.
-  //
-  overlays: [],
+  overlays: [
 
-  // Voiceover script text (for reference / ElevenLabs generation)
+    // ▸ SECTION TITLE — framework (~17s)
+    { type: 'section-title', text: 'The Framework',
+      fromFrame: 510, durationInFrames: 90 },
+
+    // ▸ CALLOUT — testimonial (~26s)
+    { type: 'callout', text: '"Questions nobody else thought to ask." — Beta user, 28',
+      position: 'bottom-left', fromFrame: 780, durationInFrames: 100 },
+
+    // ▸ CLICK SOUND — when cursor clicks "Take the test drive" (42s)
+    { type: 'sound', file: 'click.mp3', volume: 0.9,
+      fromFrame: 1260, durationInFrames: 15 },
+
+    // ▸ SECTION TITLE — quiz page (~46s)
+    { type: 'section-title', text: 'The Test Drive',
+      fromFrame: 1380, durationInFrames: 100 },
+
+    // ▸ CALLOUT — quiz value prop (~49s)
+    { type: 'callout', text: '2 minutes. No fluff.',
+      position: 'bottom-right', fromFrame: 1470, durationInFrames: 100 },
+
+    // ▸ ZOOM — gentle zoom on quiz page (~54s)
+    { type: 'spotlight', fromFrame: 1620, durationInFrames: 90 },
+    { type: 'zoom', targetX: 50, targetY: 50, scale: 1.8,
+      fromFrame: 1620, holdFrames: 30, totalFrames: 120 },
+    { type: 'sound', file: 'whoosh-large.mp3', volume: 0.7,
+      fromFrame: 1620, durationInFrames: 30 },
+
+    // ▸ OUTRO CARD (~64s, runs 12s to end)
+    { type: 'outro',
+      headline: 'The final CTA.',
+      subheadline: 'Subheadlining to CTA',
+      cta: 'Take the Test Drive',
+      website: 'google.com',
+      fromFrame: 1920, durationInFrames: 360 },
+  ],
+
   voiceoverScript: '',
 };

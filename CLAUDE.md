@@ -231,6 +231,31 @@ Common adjustments:
 - Sound effect files must be placed in `remotion/public/` and referenced by filename
 - `npm run studio` opens a browser preview with frame-by-frame scrubbing — great for timing
 
+## Hard-Won Lessons
+
+### Scroll timing: page load takes ~8-10 seconds, not 6
+The recording starts when the browser context is created. Between context creation, `page.goto()`, and the 6-second `waitForTimeout`, the actual page load takes **8-10 seconds** of recording time. All overlay frame calculations must account for this offset — content doesn't start scrolling until ~frame 240-300.
+
+### Verify overlay timing with frame extraction — never guess
+Don't estimate when content is visible during a scroll. Extract actual frames from the recording and inspect them:
+
+```bash
+for t in 10 15 20 25 30 35 40; do
+  ffmpeg -y -ss $t -i remotion/public/recording.webm -frames:v 1 -q:v 2 "/tmp/frame_${t}s.jpg" 2>/dev/null
+done
+```
+
+Then read the extracted images to verify what's on screen at each timestamp. This is especially critical for timing click sounds, zooms, and callouts.
+
+### Never overlay text that duplicates what's on the page
+Intro cards, callouts, and section titles must NOT repeat text already visible on the website. For example, an intro card saying "you were meant for something" on top of a hero that says the same thing looks like a rendering bug. Always check what page content is visible at the overlay's frame.
+
+### Dark-themed sites: set browser background before capture
+The browser's default blank page is white. For dark-themed sites, `capture.js` sets `document.documentElement.style.backgroundColor` to `brand.dark` immediately after creating the page, before navigation. This prevents a white flash at the start of the recording.
+
+### Zoom overlays during scroll are unreliable
+Zooming to a specific viewport position during a scroll is risky because you can't predict exactly what content will be at (50%, 50%) at any given frame. The page may have large dark gaps between sections. **Only use zoom overlays at moments when you can verify the content** — e.g., on a static page (quiz page) or during a click interaction (button visible at known coordinates). For scroll segments, callouts and section titles provide visual interest without the risk of zooming into empty space.
+
 ## File Structure
 
 ```
