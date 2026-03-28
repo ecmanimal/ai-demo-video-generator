@@ -26,6 +26,9 @@ const brand = config.brand || {
   text: "#ffffff",
 };
 
+const bgMusic = config.bgMusic || null;
+const totalDuration = Math.ceil((config.audioDuration || 45) * (config.fps || 30));
+
 export const DemoVideo: React.FC = () => {
   const frame = useCurrentFrame();
   const overlays: any[] = config.overlays || [];
@@ -98,6 +101,25 @@ export const DemoVideo: React.FC = () => {
 
       {/* Layer 2: Voiceover audio */}
       <Audio src={staticFile("voiceover.mp3")} />
+
+      {/* Layer 2b: Background music with fade in/out */}
+      {bgMusic && (
+        <Audio
+          src={staticFile(bgMusic.file)}
+          volume={(f) => {
+            const maxVol = bgMusic.volume ?? 0.12;
+            const fadeIn = bgMusic.fadeInFrames ?? 60;
+            const fadeOut = bgMusic.fadeOutFrames ?? 90;
+            if (f < fadeIn) {
+              return interpolate(f, [0, fadeIn], [0, maxVol], { extrapolateRight: "clamp" });
+            }
+            if (f > totalDuration - fadeOut) {
+              return interpolate(f, [totalDuration - fadeOut, totalDuration], [maxVol, 0], { extrapolateLeft: "clamp" });
+            }
+            return maxVol;
+          }}
+        />
+      )}
 
       {/* Layer 3: Config-driven overlays */}
       {overlays.map((overlay: any, i: number) => {

@@ -8,4 +8,5 @@ remotion/node_modules/
 *.webm
 *.wav
 voiceover-script.txt
+video.config.js
 _scroll_smooth.mp4
